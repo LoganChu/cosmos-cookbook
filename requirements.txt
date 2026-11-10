@@ -1,0 +1,18 @@
+# Cosmos 3 runs on Diffusers (generator) and Transformers (reasoner).
+# Edge support is only on the `main` branch of both until the next PyPI releases.
+diffusers @ git+https://github.com/huggingface/diffusers.git
+transformers @ git+https://github.com/huggingface/transformers.git
+torch
+torchvision
+accelerate
+safetensors>=0.8.0
+huggingface_hub
+cosmos_guardrail
+av
+imageio
+imageio-ffmpeg
+pillow
+numpy
+psutil
+openai
+requests
