@@ -40,16 +40,17 @@ treat it as an experiment.
 
 ### About quantization
 
-- **FP8 for Nano** is an official NVIDIA artifact: the `fp8` branch of `nvidia/Cosmos3-Nano`
-  (21 GB instead of 35 GB). `make download-nano-fp8` fetches it and `make fp8-deps`
-  installs the loader. NVIDIA's docs link a separate `Cosmos3-Nano-FP8` repository; that
-  link returned 404 on 2026-11-09, and the branch is where the weights are.
+- **FP8 checkpoints are official NVIDIA artifacts.** `nvidia/Cosmos3-Edge-FP8` (6.4 GB),
+  `nvidia/Cosmos3-Nano-FP8` (21 GB) and `nvidia/Cosmos3-Super-FP8` (70 GB) became public on
+  2026-11-09; earlier that day they returned 404. Nano's weights are also on the `fp8`
+  branch of `nvidia/Cosmos3-Nano`, which is what `make download-nano-fp8` fetches.
+  `make fp8-deps` installs the loader. None of the FP8 checkpoints have been run here.
 - **FP8 saves less than the file size suggests.** Only weights shrink. Activations, the
   VAE and the vision encoder stay at full size, and the exported checkpoint runs the first
   and last three denoising steps at 16-bit activations to protect quality.
-- **Edge has no published FP8 checkpoint.** At 9 GB it does not need one on this card. You
-  can export one with `quantize_fp8_checkpoint` from cosmos-framework (`make framework`,
-  then its `quantization/` cookbook) if you want to study the speed and quality trade.
+- **Edge does not need FP8 on this card**: the full-precision model peaks under 10 GiB.
+  The FP8 repo is useful for studying the speed and quality trade, and
+  `quantize_fp8_checkpoint` in cosmos-framework (`make framework`) exports your own.
 - **NVFP4** (4-bit) is offered only inside the NIM container, for the Reasoner.
 - The model cards state that only BF16 is officially tested.
 

@@ -6,6 +6,8 @@ explanation of how the models work and where they sit in a Physical AI stack.
 
 - [docs/how-cosmos-works.md](docs/how-cosmos-works.md): architecture, the workflows it enables, and what "real time" means
 - [docs/vram-fit.md](docs/vram-fit.md): every Cosmos model against a 32 GB card, quantized and not
+- [docs/gr00t2.md](docs/gr00t2.md): GR00T 2 walkthrough: how the model works, a miniature of it to train, speed up and fine-tune, and GR00T N1.7 running for comparison
+- [docs/sim.md](docs/sim.md): the Edge DROID policy driving a simulated robot: type instructions, change the CFG scale between plans, compare what it imagined with what happened
 
 ## Setup
 
@@ -53,6 +55,28 @@ will watch. The second one mattered more. Not checked here: how much action qual
 4-step setting gives up. NVIDIA's own real-time benchmark also uses 4 steps, but with
 guidance 3.0 where this script uses 1.0.
 
+## The policy in simulation
+
+`make sim-setup` once, then `make sim-server` in one terminal and `make sim` in another. The Edge
+DROID policy drives a simulated Franka arm in one of RoboLab's 120 tabletop scenes on Isaac Sim 6.
+You type instructions, set the CFG scale (`/cfg 6`) or steps between plans, and can watch the
+video it imagined beside what actually happened. `make sim-batch` runs instructions × CFG scales
+× seeds headless and reports which succeeded, and `make sim-grid` turns a batch into one labeled
+comparison video, so no display that can run Isaac Sim is needed. Each plan takes 0.43 to 0.6 s of the 2.13 s it
+covers. See [docs/sim.md](docs/sim.md).
+
+## GR00T 2
+
+GR00T 2 (announced 2026-11-09) has no public code or weights yet, so
+[docs/gr00t2.md](docs/gr00t2.md) teaches it through things that do run:
+
+| Command | What it shows |
+|---|---|
+| `make wam-train`, `wam-eval`, `wam-imagine` | A 7M-parameter world-action model with GR00T 2's structure, trained in 13 minutes on a toy tabletop with two robots |
+| `make wam-bench` | Denoising schedules (2v4a, 1v2a), key/value reuse, bf16 and `torch.compile` against latency and success |
+| `make wam-adapt` | Rank-32 LoRA: a new skill from five demonstrations |
+| `make gr00t-setup`, `make gr00t-n17` | GR00T N1.7, the open predecessor, on a recorded DROID episode |
+
 ## What fits on this card
 
 | | Edge (4B) | Nano (16B) | Super (64B) |
@@ -82,9 +106,11 @@ Details, quantization options and the older Cosmos models are in
 ## Layout
 
 ```
-scripts/        common.py (aliases, memory modes, timing) and one script per capability
-docs/           the two guides above
-third_party/    cosmos-framework checkout (gitignored)
+scripts/        common.py (aliases, memory modes, timing) and one script per capability;
+                wam*.py is the miniature world-action model, gr00t_n17.py runs GR00T N1.7,
+                sim_policy_server.py and sim_droid.py run the DROID policy in simulation
+docs/           the guides above
+third_party/    cosmos-framework, Isaac-GR00T and RoboLab checkouts (gitignored)
 outputs/        generated video and action files (gitignored)
 ```
 
