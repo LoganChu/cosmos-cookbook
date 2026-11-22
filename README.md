@@ -59,7 +59,8 @@ guidance 3.0 where this script uses 1.0.
 
 `make sim-setup` once, then `make sim-server` in one terminal and `make sim` in another. The Edge
 DROID policy drives a simulated Franka arm in one of RoboLab's 120 tabletop scenes on Isaac Sim 6.
-You type instructions, set the CFG scale (`/cfg 6`) or steps between plans, and can watch the
+You type instructions, set the CFG scale (`/cfg 6`), a negative prompt for it to push away from
+(`/negative put the cube in the bowl`) or steps between plans, and can watch the
 video it imagined beside what actually happened. `make sim-batch` runs instructions × CFG scales
 × seeds headless and reports which succeeded, and `make sim-grid` turns a batch into one labeled
 comparison video, so no display that can run Isaac Sim is needed. Each plan takes 0.43 to 0.6 s of the 2.13 s it

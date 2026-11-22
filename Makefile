@@ -113,13 +113,14 @@ sim-server: ## Edge DROID policy server for the simulator on 127.0.0.1:8000 (CFG
 sim: ## Simulated DROID robot you instruct by typing (TASK=BananaInBowlTask; needs sim-server)
 	OMNI_KIT_ACCEPT_EULA=Y $(call capped,14G) $(SIM_PY) scripts/sim_droid.py --task $(TASK) --viz kit
 
-sim-batch: ## Headless: every PROMPTS x CFG x SEEDS run from a fresh scene, videos + success table
+sim-batch: ## Headless: every PROMPTS x CFG x NEGATIVE x SEEDS run from a fresh scene, videos + success table
 	OMNI_KIT_ACCEPT_EULA=Y $(call capped,14G) $(SIM_PY) scripts/sim_droid.py --task $(TASK) \
 		--prompt $(or $(PROMPTS),"Pick up the banana and place it in the bowl") --cfg $(CFG) \
-		--seed $(or $(SEEDS),0)
+		--seed $(or $(SEEDS),0) $(if $(NEGATIVE),--negative $(NEGATIVE)) \
+		$(if $(INTERVAL),--interval $(INTERVAL)) $(if $(PLANS),--max-plans $(PLANS))
 
-sim-grid: ## One labeled comparison video of a batch (RUN=outputs/sim/<folder>, default newest; VIEWS=1)
-	python3 scripts/sim_grid.py $(RUN) $(if $(VIEWS),--views)
+sim-grid: ## One labeled comparison video of a batch (RUN="outputs/sim/<folder> ...", default newest; VIEWS=1; NEGATIVE= to pick second passes)
+	python3 scripts/sim_grid.py $(RUN) $(if $(VIEWS),--views) $(if $(NEGATIVE),--negatives $(NEGATIVE))
 
 # OpenAI-compatible servers, as given on NVIDIA's model cards. MODEL=nvidia/Cosmos3-Nano to switch.
 MODEL ?= nvidia/Cosmos3-Edge

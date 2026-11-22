@@ -14,6 +14,12 @@ Optional request keys, next to the usual observation and prompt:
                        about 1000, 938, 833 and 625, so only the first, noisiest step gets CFG.
     num_steps          denoising steps per plan
     seed               sampling seed for this plan
+    negative           a negative prompt: CFG's second pass is conditioned on it instead of on an
+                       empty caption, so the plan is pushed toward the instruction and away from
+                       this, v = v_negative + guidance * (v_instruction - v_negative). It is
+                       formatted exactly as the instruction is (the JSON prompt), so the two passes
+                       differ only in the instruction text. Has no effect at guidance 1.0, which
+                       skips the second pass.
     decode_video       also return the video the policy imagined while planning
 
 Replies carry `action` (32 x 8: seven absolute joint angles in radians, then the gripper, 0 open
@@ -105,7 +111,41 @@ def main() -> None:
                 settings["deterministic_seed"] = True
             if obs.get("decode_video") is not None:
                 settings["decode_video"] = bool(obs["decode_video"])
+            if obs.get("negative") is not None and not isinstance(obs["negative"], str):
+                raise ValueError("negative must be a string")
             return settings
+
+        def _build_sample(self, obs: dict[str, Any]) -> dict[str, Any]:
+            sample = super()._build_sample(obs)
+            if obs.get("negative"):
+                # Run the negative through the same transform as the instruction, so it gets the
+                # same JSON wrapping (view description, duration, fps); only the task text differs.
+                negative = super()._build_sample({**obs, "prompt": obs["negative"]})
+                sample[self._negative_key] = negative["ai_caption"]
+            return sample
+
+        @property
+        def _negative_key(self) -> str:
+            return "neg_" + getattr(self.model, "input_caption_key", "ai_caption")
+
+        def _generate(self, sample: dict[str, Any], seed: int) -> dict[str, Any]:
+            if self._negative_key not in sample:
+                return super()._generate(sample, seed)
+            # The reference _generate, plus has_negative_prompt: the model then tokenizes
+            # data_batch["neg_ai_caption"] for the unconditional pass instead of "".
+            data_batch = reference._build_data_batch_from_sample(sample)
+            with torch.inference_mode():
+                return self.model.generate_samples_from_batch(
+                    data_batch,
+                    guidance=self.cfg.guidance,
+                    guidance_interval=(
+                        list(self.cfg.guidance_interval) if self.cfg.guidance_interval is not None else None
+                    ),
+                    seed=[seed],
+                    num_steps=self.cfg.num_steps,
+                    shift=self.cfg.shift,
+                    has_negative_prompt=True,
+                )
 
         def infer(self, obs: dict[str, Any]) -> dict[str, Any]:
             with self._override_lock:
@@ -121,6 +161,7 @@ def main() -> None:
                             list(self.cfg.guidance_interval) if self.cfg.guidance_interval is not None else None
                         ),
                         "num_steps": self.cfg.num_steps,
+                        "negative": obs.get("negative") or None,
                     }
                     return reply
                 finally:
